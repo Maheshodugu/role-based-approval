@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Role-Based Approval API Test Cases</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a33;
+      --muted: #9fb0d9;
+      --text: #e8eeff;
+      --ok: #16a34a;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --line: #2b3a66;
+      --accent: #60a5fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      background: linear-gradient(180deg, #0b1020, #0a0f1c);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 24px auto 40px;
+      padding: 0 16px;
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    .sub { color: var(--muted); margin-bottom: 18px; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      background: #0b1327;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      outline: none;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 1px solid var(--line);
+      background: #13213f;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 12px;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    .small { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      font-size: 14px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th { background: #122247; color: #d8e6ff; }
+    tr:last-child td { border-bottom: none; }
+    .role {
+      display: inline-block;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      color: #dbeafe;
+      background: #0f1b36;
+    }
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      margin-right: 4px;
+    }
+    .s-ok { background: var(--ok); }
+    .s-warn { background: var(--warn); }
+    .s-bad { background: var(--bad); }
+    code {
+      font-family: Consolas, Menlo, monospace;
+      background: #0a142c;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 5px;
+      color: #dbeafe;
+      white-space: nowrap;
+    }
+    textarea {
+      width: 100%;
+      min-height: 86px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #0b1327;
+      color: var(--text);
+      padding: 8px;
+      font-family: Consolas, Menlo, monospace;
+      font-size: 12px;
+    }
+    .muted { color: var(--muted); }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      table { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Role-Based Approval API - Test Cases</h1>
+    <div class="sub">Use this checklist while testing in Postman. Mark pass or fail and add notes per test.</div>
+
+    <div class="panel">
+      <div class="grid">
+        <div class="field">
+          <label>Base URL</label>
+          <input id="baseUrl" value="http://role-based-approval.test" />
+        </div>
+        <div class="field">
+          <label>Author Email</label>
+          <input id="authorEmail" value="author@test.com" />
+        </div>
+        <div class="field">
+          <label>Manager Email</label>
+          <input id="managerEmail" value="manager@test.com" />
+        </div>
+        <div class="field">
+          <label>Admin Email</label>
+          <input id="adminEmail" value="admin@test.com" />
+        </div>
+      </div>
+      <div class="small">Password default for all test users: <code>password</code></div>
+      <div class="btns">
+        <button onclick="saveConfig()">Save Config</button>
+        <button onclick="markAll('PASS')">Mark All PASS</button>
+        <button onclick="markAll('FAIL')">Mark All FAIL</button>
+        <button onclick="clearResults()">Clear Results</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px;">#</th>
+            <th style="width:120px;">Role</th>
+            <th>Test Case</th>
+            <th style="width:210px;">Method / Endpoint</th>
+            <th style="width:130px;">Expected</th>
+            <th style="width:120px;">Result</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const tests = [
+      { role:'Public', name:'Login as Author returns token', method:'POST', endpoint:'/api/login', expected:'200 + token', body:'{"email":"author@test.com","password":"password","device_name":"postman"}' },
+      { role:'Public', name:'Login as Manager returns token', method:'POST', endpoint:'/api/login', expected:'200 + token', body:'{"email":"manager@test.com","password":"password","device_name":"postman"}' },
+      { role:'Public', name:'Login as Admin returns token', method:'POST', endpoint:'/api/login', expected:'200 + token', body:'{"email":"admin@test.com","password":"password","device_name":"postman"}' },
+
+      { role:'Author', name:'Create post', method:'POST', endpoint:'/api/posts', expected:'201', body:'{"title":"My First Post","body":"Draft content"}' },
+      { role:'Author', name:'List posts shows only own posts', method:'GET', endpoint:'/api/posts', expected:'200 (only own)' },
+      { role:'Author', name:'Update own post', method:'PUT', endpoint:'/api/posts/{post_id}', expected:'200', body:'{"title":"Updated Title","body":"Updated body"}' },
+      { role:'Author', name:'Approve post should be forbidden', method:'POST', endpoint:'/api/posts/{post_id}/approve', expected:'403' },
+      { role:'Author', name:'Reject post should be forbidden', method:'POST', endpoint:'/api/posts/{post_id}/reject', expected:'403', body:'{"rejected_reason":"No permission"}' },
+      { role:'Author', name:'Delete post should be forbidden', method:'DELETE', endpoint:'/api/posts/{post_id}', expected:'403' },
+
+      { role:'Manager', name:'List posts shows all posts', method:'GET', endpoint:'/api/posts', expected:'200 (all)' },
+      { role:'Manager', name:'Approve post', method:'POST', endpoint:'/api/posts/{post_id}/approve', expected:'200 (status=approved)' },
+      { role:'Manager', name:'Reject post with reason', method:'POST', endpoint:'/api/posts/{post_id}/reject', expected:'200 (status=rejected)', body:'{"rejected_reason":"Needs improvement"}' },
+      { role:'Manager', name:'Delete post should be forbidden', method:'DELETE', endpoint:'/api/posts/{post_id}', expected:'403' },
+
+      { role:'Admin', name:'Delete post', method:'DELETE', endpoint:'/api/posts/{post_id}', expected:'204' },
+      { role:'Any Auth', name:'Logout revokes current token', method:'POST', endpoint:'/api/logout', expected:'200' },
+
+      { role:'DB', name:'Logs include created, approved/rejected, deleted', method:'SQL', endpoint:'post_logs table', expected:'actions present' }
+    ];
+
+    const rows = document.getElementById('rows');
+
+    function badge(role) {
+      return `<span class="role">${role}</span>`;
+    }
+
+    function expectedChip(text) {
+      let cls = 's-ok';
+      if (text.includes('403')) cls = 's-warn';
+      if (text.includes('token')) cls = 's-ok';
+      return `<span class="status ${cls}">${text}</span>`;
+    }
+
+    function build() {
+      const saved = JSON.parse(localStorage.getItem('rbac-test-results') || '{}');
+      rows.innerHTML = tests.map((t, i) => {
+        const r = saved[i]?.result || '';
+        const n = saved[i]?.notes || '';
+        return `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${badge(t.role)}</td>
+            <td>
+              <div><strong>${t.name}</strong></div>
+              ${t.body ? `<div class="muted" style="margin-top:6px;">Payload:</div><textarea readonly>${t.body}</textarea>` : ''}
+            </td>
+            <td><code>${t.method}</code> <code>${t.endpoint}</code></td>
+            <td>${expectedChip(t.expected)}</td>
+            <td>
+              <select onchange="setResult(${i}, this.value)" style="width:100%;padding:8px;border-radius:8px;background:#0b1327;color:#e8eeff;border:1px solid #2b3a66;">
+                <option value="" ${r===''?'selected':''}>Pending</option>
+                <option value="PASS" ${r==='PASS'?'selected':''}>PASS</option>
+                <option value="FAIL" ${r==='FAIL'?'selected':''}>FAIL</option>
+                <option value="BLOCKED" ${r==='BLOCKED'?'selected':''}>BLOCKED</option>
+              </select>
+            </td>
+            <td>
+              <textarea placeholder="Add response code / details" oninput="setNotes(${i}, this.value)">${n}</textarea>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      loadConfig();
+    }
+
+    function setResult(i, value) {
+      const data = JSON.parse(localStorage.getItem('rbac-test-results') || '{}');
+      data[i] = data[i] || {};
+      data[i].result = value;
+      localStorage.setItem('rbac-test-results', JSON.stringify(data));
+    }
+
+    function setNotes(i, value) {
+      const data = JSON.parse(localStorage.getItem('rbac-test-results') || '{}');
+      data[i] = data[i] || {};
+      data[i].notes = value;
+      localStorage.setItem('rbac-test-results', JSON.stringify(data));
+    }
+
+    function markAll(value) {
+      const data = JSON.parse(localStorage.getItem('rbac-test-results') || '{}');
+      tests.forEach((_, i) => {
+        data[i] = data[i] || {};
+        data[i].result = value;
+      });
+      localStorage.setItem('rbac-test-results', JSON.stringify(data));
+      build();
+    }
+
+    function clearResults() {
+      localStorage.removeItem('rbac-test-results');
+      build();
+    }
+
+    function saveConfig() {
+      localStorage.setItem('rbac-test-config', JSON.stringify({
+        baseUrl: document.getElementById('baseUrl').value,
+        authorEmail: document.getElementById('authorEmail').value,
+        managerEmail: document.getElementById('managerEmail').value,
+        adminEmail: document.getElementById('adminEmail').value,
+      }));
+      alert('Config saved in browser localStorage');
+    }
+
+    function loadConfig() {
+      const cfg = JSON.parse(localStorage.getItem('rbac-test-config') || '{}');
+      if (cfg.baseUrl) document.getElementById('baseUrl').value = cfg.baseUrl;
+      if (cfg.authorEmail) document.getElementById('authorEmail').value = cfg.authorEmail;
+      if (cfg.managerEmail) document.getElementById('managerEmail').value = cfg.managerEmail;
+      if (cfg.adminEmail) document.getElementById('adminEmail').value = cfg.adminEmail;
+    }
+
+    build();
+  </script>
+</body>
+</html>

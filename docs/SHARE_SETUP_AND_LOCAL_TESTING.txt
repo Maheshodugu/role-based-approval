@@ -1,0 +1,257 @@
+ROLE-BASED APPROVAL PROJECT - SHARE + LOCAL SETUP GUIDE
+========================================================
+
+Use this guide when sharing this project as a ZIP file with another developer.
+
+-----------------------------------------------------------------
+A) ZIP AND SEND PROJECT
+-----------------------------------------------------------------
+1) From project root, create a ZIP of the project folder.
+2) Recommended: include source code and config files.
+3) Do NOT rely on your local runtime state; receiver should run setup commands below.
+
+Project root example:
+C:\xampp\htdocs\role-based-approval
+
+-----------------------------------------------------------------
+B) PREREQUISITES ON RECEIVER MACHINE
+-----------------------------------------------------------------
+1) PHP 8.2+
+2) Composer
+3) MySQL or MariaDB
+4) Node.js + npm (only needed for frontend assets)
+5) Git (optional)
+
+-----------------------------------------------------------------
+C) UNZIP + INITIAL SETUP
+-----------------------------------------------------------------
+1) Unzip project to desired location.
+2) Open terminal in project root.
+3) Run:
+
+   composer install
+
+4) Create .env from example:
+
+   copy .env.example .env
+
+5) Generate app key:
+
+   php artisan key:generate
+
+-----------------------------------------------------------------
+D) DATABASE SETUP (MYSQL)
+-----------------------------------------------------------------
+1) Create a database (example name: role_based_approval)
+
+   SQL:
+   CREATE DATABASE role_based_approval CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+2) Update .env database values:
+
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=role_based_approval
+   DB_USERNAME=root
+   DB_PASSWORD=
+
+3) Clear cached config/routes (safe to run):
+
+   php artisan optimize:clear
+
+4) Run migrations + seed roles:
+
+   php artisan migrate --seed
+
+Notes:
+- This creates tables including:
+  users, posts, post_logs, roles/permissions tables, personal_access_tokens
+- Seeder creates roles:
+  Author, Manager, Admin
+
+-----------------------------------------------------------------
+E) OPTIONAL FRONTEND ASSET SETUP
+-----------------------------------------------------------------
+If needed:
+
+   npm install
+   npm run build
+
+(API testing works without this in most cases.)
+
+-----------------------------------------------------------------
+F) RUN LOCALLY (LOCALHOST)
+-----------------------------------------------------------------
+Start app:
+
+   php artisan serve
+
+Default local URL:
+
+   http://127.0.0.1:8000
+
+You may also use:
+
+   http://localhost:8000
+
+-----------------------------------------------------------------
+G) CREATE TEST USERS + ROLES (ONE TIME)
+-----------------------------------------------------------------
+Run:
+
+   php artisan tinker
+
+Then paste these lines:
+
+   $a = App\Models\User::firstOrCreate(['email' => 'author@test.com'], ['name' => 'Author User', 'password' => bcrypt('password')]);
+   $a->assignRole('Author');
+
+   $m = App\Models\User::firstOrCreate(['email' => 'manager@test.com'], ['name' => 'Manager User', 'password' => bcrypt('password')]);
+   $m->assignRole('Manager');
+
+   $d = App\Models\User::firstOrCreate(['email' => 'admin@test.com'], ['name' => 'Admin User', 'password' => bcrypt('password')]);
+   $d->assignRole('Admin');
+
+Exit tinker:
+
+   exit
+
+-----------------------------------------------------------------
+H) GET TOKEN USING API LOGIN (POSTMAN OR CURL)
+-----------------------------------------------------------------
+Login URL:
+
+   POST http://127.0.0.1:8000/api/login
+
+JSON body:
+
+   {
+     "email": "author@test.com",
+     "password": "password",
+     "device_name": "postman"
+   }
+
+Expected:
+- HTTP 200
+- JSON contains token
+
+Use token in header for protected endpoints:
+
+   Authorization: Bearer <TOKEN>
+
+-----------------------------------------------------------------
+I) TEST ENDPOINTS (LOCALHOST URL + JSON)
+-----------------------------------------------------------------
+Base URL:
+
+   http://127.0.0.1:8000
+
+1) LOGIN (PUBLIC)
+POST /api/login
+URL:
+http://127.0.0.1:8000/api/login
+Body:
+{
+  "email": "author@test.com",
+  "password": "password",
+  "device_name": "postman"
+}
+
+2) LOGOUT (AUTH)
+POST /api/logout
+URL:
+http://127.0.0.1:8000/api/logout
+Body: (none)
+
+3) LIST POSTS
+GET /api/posts
+URL:
+http://127.0.0.1:8000/api/posts
+Body: (none)
+
+4) CREATE POST (AUTHOR)
+POST /api/posts
+URL:
+http://127.0.0.1:8000/api/posts
+Body:
+{
+  "title": "My First Post",
+  "body": "This is a draft content from author."
+}
+
+5) UPDATE POST (AUTHOR OWN POST)
+PUT /api/posts/{id}
+URL:
+http://127.0.0.1:8000/api/posts/1
+Body:
+{
+  "title": "My First Post (Updated)",
+  "body": "Updated content by author."
+}
+
+6) APPROVE POST (MANAGER/ADMIN)
+POST /api/posts/{id}/approve
+URL:
+http://127.0.0.1:8000/api/posts/1/approve
+Body: (none)
+
+7) REJECT POST (MANAGER/ADMIN)
+POST /api/posts/{id}/reject
+URL:
+http://127.0.0.1:8000/api/posts/1/reject
+Body:
+{
+  "rejected_reason": "Please improve content quality and add references."
+}
+
+8) DELETE POST (ADMIN ONLY)
+DELETE /api/posts/{id}
+URL:
+http://127.0.0.1:8000/api/posts/1
+Body: (none)
+
+-----------------------------------------------------------------
+J) QUICK ROLE BEHAVIOR CHECK
+-----------------------------------------------------------------
+Author token:
+- can create/update own/list own
+- cannot approve/reject/delete (403)
+
+Manager token:
+- can list all/approve/reject
+- cannot delete (403)
+
+Admin token:
+- can list all/approve/reject/delete
+
+-----------------------------------------------------------------
+K) VERIFY ACTIVITY LOGS
+-----------------------------------------------------------------
+Open tinker:
+
+   php artisan tinker
+
+Query logs:
+
+   App\Models\PostLog::query()->latest()->take(20)->get(['post_id','action','performed_by']);
+
+Expected actions appear:
+- created
+- approved
+- rejected
+- deleted
+
+-----------------------------------------------------------------
+L) RUN AUTOMATED TESTS
+-----------------------------------------------------------------
+Run all tests:
+
+   php artisan test
+
+Expected:
+- Feature and unit tests pass.
+
+-----------------------------------------------------------------
+END
+-----------------------------------------------------------------

@@ -7,6 +7,127 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Role-Based Content Approval API
+
+This project implements a role-based post approval workflow on Laravel 12.
+
+### Roles
+
+- `Author`
+	- Create posts
+	- Update only own posts
+	- View only own posts
+- `Manager`
+	- View all posts
+	- Approve posts
+	- Reject posts with reason
+- `Admin`
+	- All manager capabilities
+	- Delete any post
+
+### Post Fields
+
+- `title`
+- `body`
+- `status` (`pending`, `approved`, `rejected`)
+- `approved_by`
+- `rejected_reason`
+
+### Activity Log
+
+Actions are recorded in `post_logs` with:
+
+- `post_id`
+- `action` (`created`, `approved`, `rejected`, `deleted`)
+- `performed_by`
+
+### Authentication
+
+All endpoints are protected by `auth:sanctum`.
+
+### Endpoints
+
+| Action | Method | Endpoint | Access |
+|---|---|---|---|
+| Login | POST | `/api/login` | Public |
+| Logout | POST | `/api/logout` | Any authenticated user |
+| List Posts | GET | `/api/posts` | Author/Manager/Admin |
+| Create Post | POST | `/api/posts` | Author |
+| Update Post | PUT | `/api/posts/{id}` | Author (own post) |
+| Approve Post | POST | `/api/posts/{id}/approve` | Manager/Admin |
+| Reject Post | POST | `/api/posts/{id}/reject` | Manager/Admin |
+| Delete Post | DELETE | `/api/posts/{id}` | Admin |
+
+### Request Examples
+
+Login:
+
+```json
+{
+	"email": "author@test.com",
+	"password": "password",
+	"device_name": "postman"
+}
+```
+
+Create post:
+
+```json
+{
+	"title": "Quarterly Product Update",
+	"body": "Release notes and roadmap details..."
+}
+```
+
+Reject post:
+
+```json
+{
+	"rejected_reason": "Please add references and supporting data."
+}
+```
+
+### Response Notes
+
+- `POST /api/posts` returns `201` with created post.
+- `DELETE /api/posts/{id}` returns `204`.
+- Unauthorized/forbidden actions return `403`.
+
+### Setup Notes
+
+Seed required roles:
+
+```bash
+php artisan db:seed
+```
+
+Run tests:
+
+```bash
+php artisan test
+```
+
+### Postman Collection
+
+Import the collection file from:
+
+- `docs/postman/Role-Based-Approval.postman_collection.json`
+
+Set these collection variables before sending requests:
+
+- `base_url` (example: `http://localhost`)
+- `token` (Sanctum bearer token)
+- `post_id` (an existing post id)
+
+The collection includes all workflow endpoints:
+
+- List Posts
+- Create Post
+- Update Post
+- Approve Post
+- Reject Post
+- Delete Post
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
