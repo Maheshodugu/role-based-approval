@@ -1,180 +1,229 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+ROLE-BASED CONTENT APPROVAL SYSTEM (Laravel 12)
+================================================
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Project Overview
+----------------
+This is a RESTful API built using Laravel 12 that implements a complete
+role-based content approval workflow.
 
-## Role-Based Content Approval API
+The system demonstrates:
 
-This project implements a role-based post approval workflow on Laravel 12.
+- Role-based authorization (Author, Manager, Admin)
+- Post submission and lifecycle management
+- Approval / Rejection workflow
+- Activity logging
+- Sanctum API authentication
+- Feature and unit testing
 
-### Roles
 
-- `Author`
-	- Create posts
-	- Update only own posts
-	- View only own posts
-- `Manager`
-	- View all posts
-	- Approve posts
-	- Reject posts with reason
-- `Admin`
-	- All manager capabilities
-	- Delete any post
+TECH STACK
+----------
+- Laravel 12
+- PHP 8.2+
+- MySQL
+- Laravel Sanctum (API authentication)
+- Spatie Laravel Permission
+- PHPUnit
 
-### Post Fields
 
-- `title`
-- `body`
-- `status` (`pending`, `approved`, `rejected`)
-- `approved_by`
-- `rejected_reason`
+FEATURES
+--------
+Roles:
 
-### Activity Log
+Author
+- Create posts
+- Update own posts
+- View own posts
 
-Actions are recorded in `post_logs` with:
+Manager
+- View all posts
+- Approve posts
+- Reject posts
 
-- `post_id`
-- `action` (`created`, `approved`, `rejected`, `deleted`)
-- `performed_by`
+Admin
+- Full access
+- Approve
+- Reject
+- Delete posts
 
-### Authentication
 
-All endpoints are protected by `auth:sanctum`.
+POST WORKFLOW
+-------------
+1) Author creates post -> Status: draft
+2) Manager/Admin approves -> Status: approved
+3) Manager/Admin rejects -> Status: rejected
+4) Admin can delete post
+5) All actions are logged in post_logs table
 
-### Endpoints
 
-| Action | Method | Endpoint | Access |
-|---|---|---|---|
-| Login | POST | `/api/login` | Public |
-| Logout | POST | `/api/logout` | Any authenticated user |
-| List Posts | GET | `/api/posts` | Author/Manager/Admin |
-| Create Post | POST | `/api/posts` | Author |
-| Update Post | PUT | `/api/posts/{id}` | Author (own post) |
-| Approve Post | POST | `/api/posts/{id}/approve` | Manager/Admin |
-| Reject Post | POST | `/api/posts/{id}/reject` | Manager/Admin |
-| Delete Post | DELETE | `/api/posts/{id}` | Admin |
+AUTHENTICATION
+--------------
+API authentication is handled using Laravel Sanctum.
 
-### Request Examples
+Login returns a Bearer token.
 
-Login:
+All protected endpoints require header:
 
-```json
+Authorization: Bearer <TOKEN>
+
+
+LOCAL SETUP GUIDE
+=================
+
+1) Clone Repository
+
+git clone https://github.com/Maheshodugu/role-based-approval.git
+cd role-based-approval
+
+
+2) Install Dependencies
+
+composer install
+
+
+3) Setup Environment File
+
+Windows:
+copy .env.example .env
+
+Mac/Linux:
+cp .env.example .env
+
+Generate app key:
+php artisan key:generate
+
+
+4) Database Setup
+
+Create database:
+
+CREATE DATABASE role_based_approval CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+Update .env:
+
+DB_DATABASE=role_based_approval
+DB_USERNAME=root
+DB_PASSWORD=
+
+Run migrations and seeders:
+
+php artisan optimize:clear
+php artisan migrate --seed
+
+Seeder creates:
+- Roles (Author, Manager, Admin)
+- Required permission tables
+
+
+5) Run Application
+
+php artisan serve
+
+Application runs at:
+http://127.0.0.1:8000
+
+
+TEST USERS
+----------
+Author
+email: author@test.com
+password: password
+
+Manager
+email: manager@test.com
+password: password
+
+Admin
+email: admin@test.com
+password: password
+
+
+API ENDPOINTS
+=============
+
+Base URL:
+http://127.0.0.1:8000
+
+
+PUBLIC ENDPOINT
+---------------
+
+Login
+POST /api/login
+
+Body:
 {
-	"email": "author@test.com",
-	"password": "password",
-	"device_name": "postman"
+  "email": "author@test.com",
+  "password": "password",
+  "device_name": "postman"
 }
-```
 
-Create post:
 
-```json
-{
-	"title": "Quarterly Product Update",
-	"body": "Release notes and roadmap details..."
-}
-```
+PROTECTED ENDPOINTS
+-------------------
 
-Reject post:
+Logout
+POST /api/logout
 
-```json
-{
-	"rejected_reason": "Please add references and supporting data."
-}
-```
+List Posts
+GET /api/posts
 
-### Response Notes
+Create Post (Author)
+POST /api/posts
 
-- `POST /api/posts` returns `201` with created post.
-- `DELETE /api/posts/{id}` returns `204`.
-- Unauthorized/forbidden actions return `403`.
+Update Post (Author - Own)
+PUT /api/posts/{id}
 
-### Setup Notes
+Approve Post (Manager/Admin)
+POST /api/posts/{id}/approve
 
-Seed required roles:
+Reject Post (Manager/Admin)
+POST /api/posts/{id}/reject
 
-```bash
-php artisan db:seed
-```
+Delete Post (Admin Only)
+DELETE /api/posts/{id}
 
-Run tests:
 
-```bash
+ACTIVITY LOGS
+-------------
+All actions are stored in post_logs table:
+
+- created
+- approved
+- rejected
+- deleted
+
+Check using:
+
+php artisan tinker
+
+App\Models\PostLog::latest()->take(10)->get();
+
+
+RUNNING TESTS
+-------------
 php artisan test
-```
 
-### Postman Collection
+Includes:
+- Feature tests for API endpoints
+- Role-based authorization validation
+- Post workflow validation
 
-Import the collection file from:
 
-- `docs/postman/Role-Based-Approval.postman_collection.json`
+PROJECT PURPOSE
+---------------
+This project demonstrates:
 
-Set these collection variables before sending requests:
+- Clean Laravel architecture
+- Role-based access control implementation
+- Secure API design using Sanctum
+- Test-driven backend development
+- Production-ready backend structure
 
-- `base_url` (example: `http://localhost`)
-- `token` (Sanctum bearer token)
-- `post_id` (an existing post id)
 
-The collection includes all workflow endpoints:
+AUTHOR
+------
+Mahesh Odugu
+GitHub: https://github.com/Maheshodugu
 
-- List Posts
-- Create Post
-- Update Post
-- Approve Post
-- Reject Post
-- Delete Post
-
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+END
